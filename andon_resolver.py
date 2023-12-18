@@ -1,5 +1,7 @@
 import importlib
 import subprocess
+import tkinter as tk
+from tkinter.constants import *
 import sys
 from time import sleep as s
 import logging
@@ -12,7 +14,53 @@ logging.basicConfig(level=logging.INFO)
 
 ANDON_SITE = "http://fc-andons-na.corp.amazon.com/HDC3?category=Pick&type=No+Scannable+Barcode"
 LOGIN_URL = "https://fcmenu-iad-regionalized.corp.amazon.com/login"
-REFRESH_LIMIT = 10
+
+def window(main_func):
+    def resolve_andons_with_input():
+        badge_number = badge_entry.get()
+        refresh_limit = refresh_entry.get()
+        main_func(badge_number, refresh_limit)
+
+    icon_path = 'Problem.ico'
+    window = tk.Tk()
+    window.title("HDC3 Andon Resolver")
+    window.iconbitmap(icon_path)
+    window.resizable(False,False)
+    
+    # Calculate the screen width and height
+    screen_width = window.winfo_screenwidth()
+    screen_height = window.winfo_screenheight()
+
+    # Calculate the x and y coordinates for the Tk window
+    x = (screen_width / 2) - (300 / 2)  # 300 is the width of the window
+    y = (screen_height / 2) - (150 / 2)  # 150 is the height of the window
+
+    # Set the dimensions of the window and its position
+    window.geometry(f"300x150+{int(x)}+{int(y)}")
+
+    frame = tk.Frame(window, relief=RIDGE, borderwidth=2)
+    frame.pack(fill=BOTH, expand=1)
+
+    label = tk.Label(frame, text="Author: nuneadon", font=("Amazon", 7))
+    label.pack(side=tk.BOTTOM, anchor=tk.SE)
+
+    badge_label = tk.Label(frame, text="Badge Number:")
+    badge_label.pack()
+
+    badge_entry = tk.Entry(frame)
+    badge_entry.pack()
+    badge_entry.focus()
+
+    refresh_label = tk.Label(frame, text="Number of andons to resolve (x50):")
+    refresh_label.pack()
+
+    refresh_entry = tk.Entry(frame)
+    refresh_entry.pack()
+
+    resolve_button = tk.Button(frame, text="Resolve Andon", command=resolve_andons_with_input)
+    resolve_button.pack(side=BOTTOM)
+
+    window.mainloop()
 
 def install_module(module_name):
     try:
@@ -46,9 +94,8 @@ def HELPER_type_and_click(element, text_to_type):
     element.send_keys(text_to_type)
     element.send_keys(Keys.ENTER)
 
-def resolve_andons(driver):
-    for x in range(1, 51):
-        logging.info(f'\nSession : {refreshes}')
+def resolve_andons(driver, refresh_limit):
+    for x in range(1, int(refresh_limit) + 1):
         logging.info(f"Andon #: {x}")
         select_andon(driver, x)
         resolve_andon(driver)
@@ -71,7 +118,7 @@ def resolve_andon(driver):
     save_changes = driver.find_element('xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[3]/span/div/div[2]/awsui-button[2]/button')
     save_changes.click()
 
-if __name__ == "__main__":
+def main(badge_number, refresh_limit):
     install_module('selenium')
 
     optionals = ChromeOptions()
@@ -84,18 +131,13 @@ if __name__ == "__main__":
     driver.implicitly_wait(10)
 
     navigate_to_website(driver, ANDON_SITE)
-    login(driver, '12730876')
+    login(driver, badge_number)
     navigate_to_website(driver, ANDON_SITE)  # Redundant due to first driver navigation kicks out to FCMenu Login
 
-    refreshes = 0
-    x = 0
-    while refreshes <= REFRESH_LIMIT:
-        resolve_andons(driver)
-        x += 1
-        if refreshes == REFRESH_LIMIT:
-            logging.info("\n\nRefreshing Page...")
-            driver.execute_script("location.reload();")
-        refreshes += 1
+    resolve_andons(driver, refresh_limit)
 
-    logging.info(f"\n\nAndons in session resolved: {x}")
+    logging.info(f"\n\nAndons in session resolved: {refresh_limit}")
     driver.quit()
+
+if __name__ == "__main__":
+    window(main)
