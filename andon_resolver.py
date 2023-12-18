@@ -45,20 +45,20 @@ def window(main_func):
     label.pack(side=tk.BOTTOM, anchor=tk.SE)
 
     badge_label = tk.Label(frame, text="Badge Number:")
-    badge_label.pack()
+    badge_label.pack(padx=3, pady=3)
 
     badge_entry = tk.Entry(frame)
-    badge_entry.pack()
+    badge_entry.pack(padx=3, pady=3)
     badge_entry.focus()
 
     refresh_label = tk.Label(frame, text="Number of andons to resolve (x50):")
-    refresh_label.pack()
+    refresh_label.pack(padx=3, pady=3)
 
     refresh_entry = tk.Entry(frame)
     refresh_entry.pack()
 
-    resolve_button = tk.Button(frame, text="Resolve Andon", command=resolve_andons_with_input)
-    resolve_button.pack(side=BOTTOM)
+    resolve_button = tk.Button(frame, text="Resolve Andons", command=resolve_andons_with_input)
+    resolve_button.pack(side=BOTTOM,padx=3, pady=3)
 
     window.mainloop()
 
