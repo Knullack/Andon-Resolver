@@ -3,6 +3,7 @@ import subprocess
 import tkinter as tk
 from tkinter.constants import *
 import sys
+from os.path import join, dirname
 from time import sleep as s
 import logging
 from selenium import webdriver
@@ -21,10 +22,14 @@ def window(main_func):
         refresh_limit = refresh_entry.get()
         main_func(badge_number, refresh_limit)
 
-    icon_path = 'Problem.ico'
+    icon_name = 'Problem.ico'
+    icon_path = join(dirname(__file__), icon_name)
     window = tk.Tk()
     window.title("HDC3 Andon Resolver")
-    window.iconbitmap(icon_path)
+    try:
+        window.iconbitmap(icon_path)
+    except tk.TclError:
+        None
     window.resizable(False,False)
     
     # Calculate the screen width and height
