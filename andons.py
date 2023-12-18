@@ -2,17 +2,18 @@ import importlib
 import subprocess
 import sys
 from time import sleep as s
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.action_chains import ActionChains
+
 
 try:
     importlib.import_module('selenium')
-except ImportError:
-    print("Selenium is not installed. Installing it now...")
+    from selenium import webdriver
+    from selenium.common.exceptions import WebDriverException
+    from selenium.webdriver.common.keys import Keys
+    from selenium.webdriver.chrome.options import Options as ChromeOptions
+    from selenium.webdriver.common.action_chains import ActionChains
 
-    # Run a script to install Selenium using subprocess
+except ModuleNotFoundError as e:
+    print("Selenium Module Not found. Installing it now...")
     try:
         subprocess.run([sys.executable, '-m', 'pip', 'install', 'selenium'], check=True)
     except subprocess.CalledProcessError as e:
@@ -36,14 +37,27 @@ def HELPER_typeAndClick(element, textToType):
     element.send_keys(Keys.ENTER)
 def resolver():
     website_url = "http://fc-andons-na.corp.amazon.com/HDC3?category=Pick&type=No+Scannable+Barcode"
-    optionals = Options()
+    optionals = ChromeOptions()
     optionals.add_argument('--log-level=3')
     optionals.add_argument('--force-device-scale-factor=0.7')
     optionals.add_argument('--disable-blink-features=AutomationControlled')
     optionals.add_argument('--disable-notifications')
     driver = webdriver.Chrome(options=optionals)
     driver.implicitly_wait(10)
-    driver.get(website_url)
+    exceptionCount = 0
+    while True:
+        try:
+            driver.get(website_url)
+            break
+        except WebDriverException as SE:
+            print(f'WebDriverException #{exceptionCount}: Error in loading URL {SE.msg}\n')
+            s(.3)
+            exceptionCount += 1 if exceptionCount != 5 else sys.exit()
+            # exceptionCount += 1
+            # if exceptionCount == 5:
+            #     print(f'{exceptionCount} WebDriverExceptions')
+            #     sys.exit()
+
     elements = driver.find_elements('xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/h1')
     if elements:
         url = "https://fcmenu-iad-regionalized.corp.amazon.com/login"
@@ -57,7 +71,6 @@ def resolver():
     refreshes = 0
     while refreshes <= refreshLimit:
         try:
-            
             for x in range(1, 51):
                 print(f'\nSession : {refreshes}')
                 print(f"Andon #: {x}")
