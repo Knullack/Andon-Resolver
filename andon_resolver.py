@@ -1,6 +1,7 @@
 import importlib
 import subprocess
 import tkinter as tk
+import tkinter.font as tkFont
 from tkinter.constants import *
 import sys
 from os.path import join, dirname
@@ -14,6 +15,48 @@ ANDON_SITE = "http://fc-andons-na.corp.amazon.com/HDC3?category=Pick&type=No+Sca
 LOGIN_URL = "https://fcmenu-iad-regionalized.corp.amazon.com/login"
 
 
+class AndonResolverApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Andon Resolver")
+        self.root.geometry("600x200")
+        self.root.resizable(width=False, height=False)
+        self.root.configure(background="white")
+
+        self.create_widgets()
+
+    def create_widgets(self):
+        # Labels
+        labels = ["Badge Number", "Andons To Resolve (x50)"]
+        for i, text in enumerate(labels):
+            label = tk.Label(self.root, text=text, font=("Arial", 10), fg="#333333", justify="center", background="white")
+            label.place(x=30, y=30 + i * 70, width=100 if i == 0 else 160, height=25)
+
+        # Entries
+        entries = ["Entry 1", "Entry 2"]
+        for i, text in enumerate(entries):
+            entry = tk.Entry(self.root, borderwidth="2px", font=("Arial", 10), fg="#333333", justify="center")
+            entry.insert(0, text)
+            entry.place(x=200, y=30 + i * 70, width=100, height=30)
+
+        # Checkbutton
+        check_button = tk.Checkbutton(self.root, text="Show Browser Window", font=(
+            "Arial", 10), fg="#333333", variable=tk.BooleanVar(), anchor='w', background="white")
+        check_button.place(x=400, y=30, width=160, height=25)
+
+        # Button
+        button = tk.Button(self.root, text="Resolve Andons", bg="#4CAF50", font=("Arial", 10, "bold"), fg="white", command=self.button_command)
+        button.place(x=405, y=100, width=120, height=30)
+
+        # ListBox
+        # list_box = tk.Listbox(self.root, borderwidth="2px", font=(
+        #     "Arial", 10), fg="#333333", selectbackground="#4CAF50", selectforeground="white")
+        # list_box.place(x=30, y=150, width=540, height=300)
+
+    def button_command(self):
+        print("Button Command")
+
+
 def window(main_func):
     def resolve_andons_with_input():
         badge_number = badge_entry.get()
@@ -24,6 +67,8 @@ def window(main_func):
     icon_path = join(dirname(__file__), icon_name)
     window = tk.Tk()
     window.title("HDC3 Andon Resolver")
+    window.configure(background='white')
+
     try:
         window.iconbitmap(icon_path)
     except tk.TclError:
@@ -42,7 +87,7 @@ def window(main_func):
     window.geometry(f"300x150+{int(x)}+{int(y)}")
 
     # Frame 1 --------------------------------------------------------------------------
-    badgeFrame = tk.Frame(master=window)
+    badgeFrame = tk.Frame(master=window, background='gray')
     badge_label = tk.Label(master=badgeFrame, text="Badge Number:")
     badge_entry = tk.Entry(master=badgeFrame)
 
@@ -173,4 +218,6 @@ def main(badge_number, refresh_limit):
 
 
 if __name__ == "__main__":
-    window(main)
+    root = tk.Tk()
+    app = AndonResolverApp(root)
+    root.mainloop()
