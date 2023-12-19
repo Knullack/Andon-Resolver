@@ -6,10 +6,7 @@ import sys
 from os.path import join, dirname
 from time import sleep as s
 import logging
-from selenium import webdriver
-from selenium.common.exceptions import WebDriverException
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.options import Options as ChromeOptions
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -84,6 +81,7 @@ def install_module(module_name):
 
 
 def navigate_to_website(driver, url, max_attempts=5):
+    from selenium.common.exceptions import WebDriverException
     exception_count = 0
     while exception_count < max_attempts:
         try:
@@ -104,6 +102,7 @@ def login(driver, badge):
 
 
 def HELPER_type_and_click(element, text_to_type):
+    from selenium.webdriver.common.keys import Keys
     element.send_keys(text_to_type)
     element.send_keys(Keys.ENTER)
 
@@ -141,7 +140,8 @@ def resolve_andon(driver):
 
 def main(badge_number, refresh_limit):
     install_module('selenium')
-
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options as ChromeOptions
     optionals = ChromeOptions()
     optionals.add_argument('--log-level=3')
     optionals.add_argument('--force-device-scale-factor=0.7')
