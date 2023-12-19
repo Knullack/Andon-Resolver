@@ -41,29 +41,39 @@ def window(main_func):
     # Set the dimensions of the window and its position
     window.geometry(f"300x150+{int(x)}+{int(y)}")
 
-    frame = tk.Frame(window, relief=RIDGE, borderwidth=2)
-    frame.pack(fill=BOTH, expand=1)
+    # Frame 1 --------------------------------------------------------------------------
+    badgeFrame = tk.Frame(master=window)
+    badge_label = tk.Label(master=badgeFrame, text="Badge Number:")
+    badge_entry = tk.Entry(master=badgeFrame)
 
-    label = tk.Label(frame, text="Author: nuneadon", font=("Amazon", 7))
-    label.pack(side=tk.BOTTOM, anchor=tk.SE)
-
-    badge_label = tk.Label(frame, text="Badge Number:")
-    badge_label.pack(padx=3, pady=3)
-
-    badge_entry = tk.Entry(frame)
-    badge_entry.pack(padx=3, pady=3)
+    badge_label.pack(side='left', padx=2, pady=5)
+    badge_entry.pack(side='left', padx=2, pady=5)
     badge_entry.focus()
+    badgeFrame.pack()
+    # -----------------------------------------------------------------------------------
 
-    refresh_label = tk.Label(frame, text="Number of andons to resolve (x50):")
-    refresh_label.pack(padx=3, pady=3)
+    # Frame 2 --------------------------------------------------------------------------
+    R_frame = tk.Frame(master=window)
+    refresh_label = tk.Label(master=R_frame, text="Andons to resolve (x50):")
+    refresh_entry = tk.Entry(master=R_frame)
 
-    refresh_entry = tk.Entry(frame)
-    refresh_entry.pack()
+    refresh_label.pack(side='left', padx=3, pady=3)
+    refresh_entry.pack(side='left')
 
+    R_frame.pack()
+    # -----------------------------------------------------------------------------------
+
+    # Frame 3 --------------------------------------------------------------------------
+    authorFrame = tk.Frame(master=window)
+    author = tk.Label(master=authorFrame,
+                      text="Author: nuneadon", font=("Amazon", 7))
     resolve_button = tk.Button(
-        frame, text="Resolve Andons", command=resolve_andons_with_input)
-    resolve_button.pack(side=BOTTOM, padx=3, pady=3)
+        master=authorFrame, text="Resolve Andons", command=resolve_andons_with_input)
 
+    author.pack(side=tk.BOTTOM, anchor=tk.SE)
+    resolve_button.pack(side='right', padx=3, pady=3)
+    authorFrame.pack()
+    # -----------------------------------------------------------------------------------
     window.mainloop()
 
 
