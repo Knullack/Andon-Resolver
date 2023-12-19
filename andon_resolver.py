@@ -1,7 +1,6 @@
 import importlib
 import subprocess
 import tkinter as tk
-import tkinter.font as tkFont
 from tkinter.constants import *
 import sys
 from os.path import join, dirname
@@ -22,10 +21,20 @@ class AndonResolverApp:
         self.root.geometry("600x200")
         self.root.resizable(width=False, height=False)
         self.root.configure(background="white")
+        self.badge = tk.IntVar()
+        self.count = tk.IntVar()
+        self.headless = tk.BooleanVar()
+        self.output_text = tk.StringVar()
+        self.output_text.set(value="")
+        
+        try:
+            icon_path = 'Problem.ico'
+            self.root.iconbitmap(icon_path)
+        except tk.TclError:
+            None
+        self.create_widgets(self.badge, self.count, self.headless, self.output_text)
 
-        self.create_widgets()
-
-    def create_widgets(self):
+    def create_widgets(self, badge, count, bool_head, output_text):
         # Labels
         labels = ["Badge Number", "Andons To Resolve (x50)"]
         for i, text in enumerate(labels):
@@ -33,29 +42,48 @@ class AndonResolverApp:
             label.place(x=30, y=30 + i * 70, width=100 if i == 0 else 160, height=25)
 
         # Entries
-        entries = ["Entry 1", "Entry 2"]
-        for i, text in enumerate(entries):
-            entry = tk.Entry(self.root, borderwidth="2px", font=("Arial", 10), fg="#333333", justify="center")
-            entry.insert(0, text)
-            entry.place(x=200, y=30 + i * 70, width=100, height=30)
+        entry_Badge = tk.Entry(self.root, borderwidth="2px", font=("Arial", 10), fg="#333333", justify="center", textvariable=badge)
+        entry_Badge.delete(first=0)
+        entry_Badge.place(x=200, y=30, width=100, height=30)
+        entry_Badge.focus()
+
+        entry_count = tk.Entry(self.root, borderwidth="2px", font=("Arial", 10), fg="#333333", justify="center", textvariable=count)
+        entry_count.delete(first=0)
+        entry_count.insert(0, "1")
+        entry_count.place(x=200, y=30 + 70, width=100, height=30)
 
         # Checkbutton
-        check_button = tk.Checkbutton(self.root, text="Show Browser Window", font=(
-            "Arial", 10), fg="#333333", variable=tk.BooleanVar(), anchor='w', background="white")
+        check_button = tk.Checkbutton(self.root, text="Hide Browser Window", font=("Arial", 10), fg="#333333", variable=bool_head, anchor='w', background="white")
         check_button.place(x=400, y=30, width=160, height=25)
 
         # Button
-        button = tk.Button(self.root, text="Resolve Andons", bg="#4CAF50", font=("Arial", 10, "bold"), fg="white", command=self.button_command)
+        button = tk.Button(self.root, text="Resolve Andons", bg="#4CAF50", font=("Arial", 10, "bold"), fg="white", command=self.resolve)
         button.place(x=405, y=100, width=120, height=30)
 
-        # ListBox
-        # list_box = tk.Listbox(self.root, borderwidth="2px", font=(
-        #     "Arial", 10), fg="#333333", selectbackground="#4CAF50", selectforeground="white")
-        # list_box.place(x=30, y=150, width=540, height=300)
-
-    def button_command(self):
-        print("Button Command")
-
+        # Label
+        output = tk.Label(self.root, textvariable=output_text, font=("Arial", 10), fg="#333333", justify="center", background="white", anchor='w')
+        output.place(x=30, y=170, width=300, height=30)
+        
+    def resolve(self):
+        try:
+            badge_value = str(self.badge.get())
+            count_value = self.count.get()
+            boolean = self.headless.get()
+            if badge_value and count_value != "":
+                try:
+                    count_value = int(count_value)
+                    self.output_text.set("")  # Clear the output text if badge is not empty
+                    self.root.update()
+                    main(badge_value, count_value, boolean)
+                except ValueError:
+                    self.output_text.set("Invalid Count. Enter a valid number.")
+                    self.root.update()
+            else:
+                self.output_text.set("Enter Valid Badge/Count entry")
+                self.root.update()
+        except tk.TclError:
+            self.output_text.set("Enter Valid Badge/Count entry")
+            self.root.update()
 
 def window(main_func):
     def resolve_andons_with_input():
@@ -193,7 +221,7 @@ def resolve_andon(driver):
     save_changes.click()
 
 
-def main(badge_number, refresh_limit):
+def main(badge_number, refresh_limit, head):
     install_module('selenium')
     from selenium import webdriver
     from selenium.webdriver.chrome.options import Options as ChromeOptions
@@ -203,13 +231,17 @@ def main(badge_number, refresh_limit):
     optionals.add_argument('--disable-blink-features=AutomationControlled')
     optionals.add_argument('--disable-notifications')
 
+    if head:
+        optionals.add_argument('--headless')
+    
+
     driver = webdriver.Chrome(options=optionals)
     driver.implicitly_wait(10)
 
-    navigate_to_website(driver, ANDON_SITE)
+    navigate_to_website(driver, ANDON_SITE, head)
     login(driver, badge_number)
     # Redundant due to first driver navigation kicks out to FCMenu Login
-    navigate_to_website(driver, ANDON_SITE)
+    navigate_to_website(driver, ANDON_SITE, head)
 
     resolve_andons(driver, refresh_limit)
 
