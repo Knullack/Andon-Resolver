@@ -63,25 +63,26 @@ class AndonResolverApp:
         output.place(x=30, y=170, width=300, height=30)
         
     def resolve(self):
+        from selenium.common.exceptions import NoSuchElementException
         try:
             badge_value = str(self.badge.get())
             count_value = self.count.get()
             boolean = self.headless.get()
             if badge_value and count_value != "":
-                try:
-                    count_value = int(count_value)
-                    self.output_text.set("")  # Clear the output text if badge is not empty
-                    self.root.update()
-                    main(badge_value, count_value, boolean)
-                except ValueError:
-                    self.output_text.set("Invalid Count. Enter a valid number.")
-                    self.root.update()
+                count_value = int(count_value)
+                self.output_text.set("")  # Clear the output text if badge is not empty
+                self.root.update()
+                main(badge_value, count_value, boolean)
             else:
                 self.output_text.set("Enter Valid Badge/Count entry")
                 self.root.update()
         except tk.TclError:
             self.output_text.set("Enter Valid Badge/Count entry")
             self.root.update()
+        except NoSuchElementException as e:
+            print(e)
+        except Exception as e:
+            print(e)
 
 def window(main_func):
     def resolve_andons_with_input():
@@ -175,8 +176,13 @@ def navigate_to_website(driver, url, max_attempts=5):
     sys.exit(1)
 
 def login(driver, badge):
-    input_element = driver.find_element('xpath', '//*[@id="badgeBarcodeId"]')
-    HELPER_type_and_click(input_element, badge)
+    elements = driver.find_elements('xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/h1')
+    if elements:
+        url = "https://fcmenu-iad-regionalized.corp.amazon.com/login"
+        driver.get(url)
+        loginBadge = '12730876'
+        input_element = driver.find_element('xpath', '//*[@id="badgeBarcodeId"]')
+        HELPER_type_and_click(input_element,loginBadge)
 
 def HELPER_type_and_click(element, text_to_type):
     from selenium.webdriver.common.keys import Keys
@@ -184,11 +190,13 @@ def HELPER_type_and_click(element, text_to_type):
     element.send_keys(Keys.ENTER)
 
 def resolve_andons(driver, refresh_limit):
-    for x in range(1, int(refresh_limit) + 1):
-        logging.info(f"Andon #: {x}")
-        select_andon(driver, x)
-        resolve_andon(driver)
-        s(3)
+    refreshes = 0
+    while refreshes <= refresh_limit:
+        for x in range(1, 51):
+            logging.info(f"Andon #: {x}")
+            select_andon(driver, x)
+            resolve_andon(driver, refresh_limit)
+            s(.8)
 
 def select_andon(driver, x):
     select_andon = driver.find_element(
@@ -202,14 +210,19 @@ def select_andon(driver, x):
     view_andon.click()
     s(0.8)
 
-def resolve_andon(driver):
-    resolve = driver.find_element(
-        'xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[2]/div/span/span/awsui-form/div/div[2]/span/span/awsui-form-section/div/div[2]/span/awsui-column-layout/div/span/div/awsui-form-field[4]/div/div/div/div/span/awsui-checkbox/label/input')
+def resolve_andon(driver, refresh_limit):
+    failed_warning_msg = driver.find_elements('xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[2]/div/span/span/awsui-flash/div/div[2]/div/div')
+    resolve = driver.find_element('xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[2]/div/span/span/awsui-form/div/div[2]/span/span/awsui-form-section/div/div[2]/span/awsui-column-layout/div/span/div/awsui-form-field[4]/div/div/div/div/span/awsui-checkbox/label/input')
     resolve.click()
     s(0.8)
     save_changes = driver.find_element(
         'xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[3]/span/div/div[2]/awsui-button[2]/button')
     save_changes.click()
+    if failed_warning_msg:
+        logging.info('Unable to update andon, refreshing page...')
+        driver.execute_script("location.reload();")
+        resolve_andons(driver,refresh_limit)
+
 
 def main(badge_number, refresh_limit, head):
     install_module('selenium')
@@ -228,10 +241,10 @@ def main(badge_number, refresh_limit, head):
     driver = webdriver.Chrome(options=optionals)
     driver.implicitly_wait(10)
 
-    navigate_to_website(driver, ANDON_SITE, head)
+    navigate_to_website(driver, ANDON_SITE, refresh_limit)
     login(driver, badge_number)
     # Redundant due to first driver navigation kicks out to FCMenu Login
-    navigate_to_website(driver, ANDON_SITE, head)
+    navigate_to_website(driver, ANDON_SITE, refresh_limit)
 
     resolve_andons(driver, refresh_limit)
 
