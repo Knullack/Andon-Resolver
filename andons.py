@@ -102,5 +102,6 @@ def resolver():
                 refreshes += 1   
             s(3)
     print(f"\n\nAndons in session resolved: {x}")
+    driver.quit()
 
 resolver()
