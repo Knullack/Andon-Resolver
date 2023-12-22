@@ -194,7 +194,7 @@ def resolve_andons(driver, refresh_limit):
     failedToUpdate = False
     while refreshes <= refresh_limit:
         for x in range(1, 51):
-            logging.info(f"Andon #: {x}")
+            logging.info(f"Session: {refreshes}\nAndon #: {x}")
             select_andon(driver, x)
             resolve_andon(driver, refresh_limit, failedToUpdate)
             x = 0 if failedToUpdate == True else None
