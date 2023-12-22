@@ -180,7 +180,7 @@ def login(driver, badge):
     if elements:
         url = "https://fcmenu-iad-regionalized.corp.amazon.com/login"
         driver.get(url)
-        loginBadge = '12730876'
+        loginBadge = badge
         input_element = driver.find_element('xpath', '//*[@id="badgeBarcodeId"]')
         HELPER_type_and_click(input_element,loginBadge)
 
