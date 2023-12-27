@@ -9,7 +9,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
-ANDON_SITE = "http://fc-andons-na.corp.amazon.com/HDC3?category=Pick&type=No+Scannable+Barcode"
+ANDON_SITE = "http://fc-andons-na.corp.amazon.com/HDC3?category=Pick&type=All+types"
 LOGIN_URL = "https://fcmenu-iad-regionalized.corp.amazon.com/login"
 
 class AndonResolverApp:
@@ -197,7 +197,7 @@ def resolve_andons(driver, refresh_limit):
             logging.info(f"Session: {refreshes}\nAndon #: {x}")
             select_andon(driver, x)
             resolve_andon(driver, refresh_limit, failedToUpdate)
-            x = 0 if failedToUpdate == True else None
+            x = 0 if failedToUpdate else None
     
 def select_andon(driver, x):
     from selenium.webdriver.common.action_chains import ActionChains
@@ -228,7 +228,9 @@ def resolve_andon(driver, refresh_limit, failBool):
         logging.info("Failed to update andon error. Refreshing page...")
         driver.execute_script("location.reload();")
         failBool = True
-    else: None
+        return failBool
+    else:
+        return failBool
 
 def main(badge_number, refresh_limit, head):
     install_module('selenium')
