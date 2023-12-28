@@ -1,7 +1,6 @@
 import importlib
 import subprocess
 import tkinter as tk
-from tkinter import ttk
 from tkinter.constants import *
 import sys
 from os.path import join, dirname
@@ -10,17 +9,8 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
-ANDON_SITE = "http://fc-andons-na.corp.amazon.com/HDC3?category=Pick&type=All+types"
+ANDON_SITE = "http://fc-andons-na.corp.amazon.com/HDC3?category=Pick&type=No+Scannable+Barcode"
 LOGIN_URL = "https://fcmenu-iad-regionalized.corp.amazon.com/login"
-
-
-class ReadonlyCombobox(ttk.Entry):
-    def __init__(self, master=None, **kwargs):
-        self.var = kwargs.pop('textvariable', tk.StringVar())
-        ttk.Entry.__init__(self, master, textvariable=self.var, **kwargs)
-        self.configure(state='readonly')
-        self.bind('<FocusIn>', lambda e: self.configure(state=''))
-        self.bind('<FocusOut>', lambda e: self.configure(state='readonly'))
 
 class AndonResolverApp:
     def __init__(self, root):
@@ -29,33 +19,25 @@ class AndonResolverApp:
         self.root.geometry("600x200")
         self.root.resizable(width=False, height=False)
         self.root.configure(background="white")
-
-        # Define variables
         self.badge = tk.IntVar()
         self.count = tk.IntVar()
         self.headless = tk.BooleanVar()
-        self.selected_category = tk.StringVar(value="Pick")  # Default value
-        self.selected_type = tk.StringVar(value="No Scannable Barcode")  # Default value
         self.output_text = tk.StringVar()
         self.output_text.set(value="")
-        self.url = ""
-
-        # Categories and corresponding types dictionary
-        self.types_dict = {
-            "Pick": ["Type1", "Type2", "Type3"],
-            "Stow": ["TypeA", "TypeB", "TypeC"],
-            "CycleCount": ["TypeX", "TypeY", "TypeZ"]
-        }
-
-        # Create widgets
+        
+        try:
+            icon_path = 'Problem.ico'
+            self.root.iconbitmap(icon_path)
+        except tk.TclError:
+            None
         self.create_widgets(self.badge, self.count, self.headless, self.output_text)
 
     def create_widgets(self, badge, count, bool_head, output_text):
         # Labels
         labels = ["Badge Number", "Andons To Resolve (x50)"]
         for i, text in enumerate(labels):
-            label = ttk.Label(self.root, text=text, font=("Arial", 10), justify="center", background="white")
-            label.place(x=30, y=30 + i * 43, width=100 if i == 0 else 160, height=25)
+            label = tk.Label(self.root, text=text, font=("Arial", 10), fg="#333333", justify="center", background="white")
+            label.place(x=30, y=30 + i * 70, width=100 if i == 0 else 160, height=25)
 
         # Entries
         entry_Badge = tk.Entry(self.root, borderwidth="2px", font=("Arial", 10), fg="#333333", justify="center", textvariable=badge)
@@ -66,7 +48,7 @@ class AndonResolverApp:
         entry_count = tk.Entry(self.root, borderwidth="2px", font=("Arial", 10), fg="#333333", justify="center", textvariable=count)
         entry_count.delete(first=0)
         entry_count.insert(0, "1")
-        entry_count.place(x=200, y=70, width=100, height=30)
+        entry_count.place(x=200, y=30 + 70, width=100, height=30)
 
         # Checkbutton
         check_button = tk.Checkbutton(self.root, text="Hide Browser Window", font=("Arial", 10), fg="#333333", variable=bool_head, anchor='w', background="white")
@@ -77,65 +59,30 @@ class AndonResolverApp:
         button.place(x=405, y=100, width=120, height=30)
 
         # Label
-        output = ttk.Label(self.root, textvariable=output_text, font=("Arial", 10), justify="center", background="white", anchor='w')
+        output = tk.Label(self.root, textvariable=output_text, font=("Arial", 10), fg="#333333", justify="center", background="white", anchor='w')
         output.place(x=30, y=170, width=300, height=30)
-
-        # Dropdown for category
-        categories = ["Pick", "Stow", "CycleCount"]  # Add other categories as needed
-        category_label = tk.Label(self.root, text="Category", font=("Arial", 10), fg="#333333", justify="center", background="white")
-        category_dropdown = ttk.Combobox(self.root, textvariable=self.selected_category, values=categories, state="readonly", justify='center', name="!category_dropdown")
-        category_label.place(x=90, y=110, width=100, height=25)
-        category_dropdown.place(x=200, y=110, width=100, height=30)
-        category_dropdown.bind("<<ComboboxSelected>>", self.update_type_options)
-
-        # Dropdown for type
-        types = self.types_dict.get(self.selected_category.get(), [])  # Default to an empty list
-        type_label = tk.Label(self.root, text="Type", font=("Arial", 10), fg="#333333", justify="center", background="white")
-        type_dropdown = ttk.Combobox(self.root, textvariable=self.selected_type, values=types, state="readonly", justify='center', name="!type_dropdown")
-        type_label.place(x=90, y=145, width=100, height=25)
-        type_dropdown.place(x=200, y=145, width=150, height=30)
-
-    def update_type_options(self, event):
-        # Update the type dropdown based on the selected category
-        selected_category = self.selected_category.get()
-        types = self.types_dict.get(selected_category, [])  # Default to an empty list
-        self.selected_type.set(types[0] if types else "")  # Set the first type if available
-        type_dropdown = event.widget.master.children["!type_dropdown"]  # Replace with the actual name of your type dropdown
-        type_dropdown['values'] = types
-
-        # Update the URL based on selected category and type
-        print(selected_category)
-        print(self.selected_type.get())
-        self.url = f"http://fc-andons-na.corp.amazon.com/HDC3?category={selected_category}&type={self.selected_type.get()}"
-
+        
     def resolve(self):
-        # ... (existing code remains unchanged)
+        from selenium.common.exceptions import NoSuchElementException
         try:
             badge_value = str(self.badge.get())
             count_value = self.count.get()
             boolean = self.headless.get()
-            category_value = self.selected_category.get()
-            type_value = self.selected_type.get()
-
-            # Use the updated url variable
-            url = self.url
-
             if badge_value and count_value != "":
                 count_value = int(count_value)
                 self.output_text.set("")  # Clear the output text if badge is not empty
                 self.root.update()
-                main(badge_value, count_value, boolean, url)
+                main(badge_value, count_value, boolean)
             else:
                 self.output_text.set("Enter Valid Badge/Count entry")
                 self.root.update()
         except tk.TclError:
             self.output_text.set("Enter Valid Badge/Count entry")
             self.root.update()
+        except NoSuchElementException as e:
+            print(e)
         except Exception as e:
-            logging.error(f"An error occurred: {e}")
-
-
-
+            print(e)
 
 def window(main_func):
     def resolve_andons_with_input():
@@ -250,7 +197,7 @@ def resolve_andons(driver, refresh_limit):
             logging.info(f"Session: {refreshes}\nAndon #: {x}")
             select_andon(driver, x)
             resolve_andon(driver, refresh_limit, failedToUpdate)
-            x = 0 if failedToUpdate else None
+            x = 0 if failedToUpdate == True else None
     
 def select_andon(driver, x):
     from selenium.webdriver.common.action_chains import ActionChains
@@ -281,11 +228,9 @@ def resolve_andon(driver, refresh_limit, failBool):
         logging.info("Failed to update andon error. Refreshing page...")
         driver.execute_script("location.reload();")
         failBool = True
-        return failBool
-    else:
-        return failBool
+    else: None
 
-def main(badge_number, refresh_limit, head, url):
+def main(badge_number, refresh_limit, head):
     install_module('selenium')
     from selenium import webdriver
     from selenium.webdriver.chrome.options import Options as ChromeOptions
@@ -302,10 +247,10 @@ def main(badge_number, refresh_limit, head, url):
     driver = webdriver.Chrome(options=optionals)
     driver.implicitly_wait(10)
 
-    navigate_to_website(driver, url, refresh_limit)
+    navigate_to_website(driver, ANDON_SITE, refresh_limit)
     login(driver, badge_number)
     # Redundant due to first driver navigation kicks out to FCMenu Login
-    navigate_to_website(driver, url, refresh_limit)
+    navigate_to_website(driver, ANDON_SITE, refresh_limit)
 
     resolve_andons(driver, refresh_limit)
 
