@@ -168,11 +168,12 @@ def navigate_to_website(driver, url, max_attempts=5):
             driver.get(url)
             return
         except WebDriverException as se:
-            logging.error(
-                f'WebDriverException #{exception_count}: Error in loading URL {se.msg}\n')
-            s(0.3)
             exception_count += 1
-    logging.error(f'{exception_count} WebDriverExceptions')
+            if "ERR_NAME_NOT_RESOLVED" in se.msg:
+                logging.error(f'WebDriverException #{exception_count}:\n Error in loading URL:: {se.msg}\n')
+            else:
+                logging.error(f'WebDriverException #{exception_count}:\n Error in loading URL:: {se.msg}\n')
+            
     sys.exit(1)
 
 def login(driver, badge):
