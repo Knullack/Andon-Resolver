@@ -181,7 +181,7 @@ def login(driver, badge):
     if elements:
         url = "https://fcmenu-iad-regionalized.corp.amazon.com/login"
         driver.get(url)
-        loginBadge = '12730876'
+        loginBadge = badge
         input_element = driver.find_element('xpath', '//*[@id="badgeBarcodeId"]')
         HELPER_type_and_click(input_element,loginBadge)
 
@@ -192,38 +192,44 @@ def HELPER_type_and_click(element, text_to_type):
 
 def resolve_andons(driver, refresh_limit):
     refreshes = 0
+    failedToUpdate = False
     while refreshes <= refresh_limit:
         for x in range(1, 51):
-            logging.info(f"Andon #: {x}")
+            logging.info(f"Session: {refreshes}\nAndon #: {x}")
             select_andon(driver, x)
-            resolve_andon(driver, refresh_limit)
-            s(.8)
-
+            resolve_andon(driver, refresh_limit, failedToUpdate)
+            x = 0 if failedToUpdate == True else None
+    
 def select_andon(driver, x):
-    select_andon = driver.find_element(
-        'xpath', f'/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-table/div/div[3]/table/tbody/tr[{x}]/td[1]/awsui-radio-button/div/label/input')
-    driver.execute_script("arguments[0].scrollIntoView();", select_andon)
-    s(0.8)
+    from selenium.webdriver.common.action_chains import ActionChains
+    actions = ActionChains(driver)
+    select_andon = driver.find_element('xpath', f'/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-table/div/div[3]/table/tbody/tr[{x}]/td[1]/awsui-radio-button/div/label/input')
+    view_andon = driver.find_element('xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-table/div/div[2]/div[1]/div[1]/span/div/div[2]/awsui-button[2]/button')
+    
+    actions.move_to_element(select_andon).perform()
     select_andon.click()
-    s(0.8)
-    view_andon = driver.find_element(
-        'xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-table/div/div[2]/div[1]/div[1]/span/div/div[2]/awsui-button[2]/button')
     view_andon.click()
-    s(0.8)
 
-def resolve_andon(driver, refresh_limit):
+def resolve_andon(driver, refresh_limit, failBool):
+    driver.implicitly_wait(0.1)
     failed_warning_msg = driver.find_elements('xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[2]/div/span/span/awsui-flash/div/div[2]/div/div')
     resolve = driver.find_element('xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[2]/div/span/span/awsui-form/div/div[2]/span/span/awsui-form-section/div/div[2]/span/awsui-column-layout/div/span/div/awsui-form-field[4]/div/div/div/div/span/awsui-checkbox/label/input')
-    resolve.click()
-    s(0.8)
-    save_changes = driver.find_element(
-        'xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[3]/span/div/div[2]/awsui-button[2]/button')
-    save_changes.click()
-    if failed_warning_msg:
-        logging.info('Unable to update andon, refreshing page...')
-        driver.execute_script("location.reload();")
-        resolve_andons(driver,refresh_limit)
+    save_changes = driver.find_element('xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[3]/span/div/div[2]/awsui-button[2]/button')
+    driver.implicitly_wait(10)
 
+    checkbox_state = driver.find_element('xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[2]/div/span/span/awsui-form/div/div[2]/span/span/awsui-form-section/div/div[2]/span/awsui-column-layout/div/span/div/awsui-form-field[4]/div/div/div/div/span/awsui-checkbox/label').get_attribute('class')
+    if checkbox_state == "awsui-checkbox":
+        resolve.click()
+        save_changes.click()
+        if failed_warning_msg:
+            logging.info('Unable to update andon, refreshing page...')
+            driver.execute_script("location.reload();")
+            resolve_andons(driver,refresh_limit)
+    elif checkbox_state == "awsui-checkbox awsui-checkbox-checked":
+        logging.info("Failed to update andon error. Refreshing page...")
+        driver.execute_script("location.reload();")
+        failBool = True
+    else: None
 
 def main(badge_number, refresh_limit, head):
     install_module('selenium')
