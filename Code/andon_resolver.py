@@ -26,7 +26,7 @@ class AndonResolverApp:
         self.output_text.set(value="")
         
         try:
-            icon_path = '../Resources/Problem.ico'
+            icon_path = 'Resources/Problem.ico'
             self.root.iconbitmap(icon_path)
         except tk.TclError:
             None
@@ -90,7 +90,7 @@ def window(main_func):
         refresh_limit = refresh_entry.get()
         main_func(badge_number, refresh_limit)
 
-    icon_name = '../Resources/Problem.ico'
+    icon_name = 'Resources/Problem.ico'
     icon_path = join(dirname(__file__), icon_name)
     window = tk.Tk()
     window.title("HDC3 Andon Resolver")
