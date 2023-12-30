@@ -84,69 +84,6 @@ class AndonResolverApp:
         except Exception as e:
             print(e)
 
-def window(main_func):
-    def resolve_andons_with_input():
-        badge_number = badge_entry.get()
-        refresh_limit = refresh_entry.get()
-        main_func(badge_number, refresh_limit)
-
-    icon_name = 'Resources/Problem.ico'
-    icon_path = join(dirname(__file__), icon_name)
-    window = tk.Tk()
-    window.title("HDC3 Andon Resolver")
-    window.configure(background='white')
-
-    try:
-        window.iconbitmap(icon_path)
-    except tk.TclError:
-        None
-    window.resizable(False, False)
-
-    # Calculate the screen width and height
-    screen_width = window.winfo_screenwidth()
-    screen_height = window.winfo_screenheight()
-
-    # Calculate the x and y coordinates for the Tk window
-    x = (screen_width / 2) - (300 / 2)  # 300 is the width of the window
-    y = (screen_height / 2) - (150 / 2)  # 150 is the height of the window
-
-    # Set the dimensions of the window and its position
-    window.geometry(f"300x150+{int(x)}+{int(y)}")
-
-    # Frame 1 --------------------------------------------------------------------------
-    badgeFrame = tk.Frame(master=window, background='gray')
-    badge_label = tk.Label(master=badgeFrame, text="Badge Number:")
-    badge_entry = tk.Entry(master=badgeFrame)
-
-    badge_label.pack(side='left', padx=2, pady=5)
-    badge_entry.pack(side='left', padx=2, pady=5)
-    badge_entry.focus()
-    badgeFrame.pack()
-    # -----------------------------------------------------------------------------------
-
-    # Frame 2 --------------------------------------------------------------------------
-    R_frame = tk.Frame(master=window)
-    refresh_label = tk.Label(master=R_frame, text="Andons to resolve (x50):")
-    refresh_entry = tk.Entry(master=R_frame)
-
-    refresh_label.pack(side='left', padx=3, pady=3)
-    refresh_entry.pack(side='left')
-
-    R_frame.pack()
-    # -----------------------------------------------------------------------------------
-
-    # Frame 3 --------------------------------------------------------------------------
-    authorFrame = tk.Frame(master=window)
-    author = tk.Label(master=authorFrame,
-                      text="Author: nuneadon", font=("Amazon", 7))
-    resolve_button = tk.Button(
-        master=authorFrame, text="Resolve Andons", command=resolve_andons_with_input)
-
-    author.pack(side=tk.BOTTOM, anchor=tk.SE)
-    resolve_button.pack(side='right', padx=3, pady=3)
-    authorFrame.pack()
-    # -----------------------------------------------------------------------------------
-    window.mainloop()
 
 def install_module(module_name):
     try:
