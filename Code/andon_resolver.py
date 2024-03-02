@@ -8,8 +8,8 @@ from time import sleep as s
 import logging
 
 logging.basicConfig(level=logging.INFO)
-
-ANDON_SITE = "http://fc-andons-na.corp.amazon.com/HDC3?category=Pick&type=No+Scannable+Barcode"
+DRIVER = None
+ANDON_SITE = "http://fc-andons-na.corp.amazon.com/HDC3?category=Pick&type=All+types"
 LOGIN_URL = "https://fcmenu-iad-regionalized.corp.amazon.com/login"
 
 class AndonResolverApp:
@@ -64,6 +64,7 @@ class AndonResolverApp:
         
     def resolve(self):
         from selenium.common.exceptions import NoSuchElementException
+        from selenium.common.exceptions import ElementClickInterceptedException
         try:
             badge_value = str(self.badge.get())
             count_value = self.count.get()
@@ -81,6 +82,8 @@ class AndonResolverApp:
             self.root.update()
         except NoSuchElementException as e:
             print(e)
+        except ElementClickInterceptedException:
+            DRIVER.execute_script("location.reload();")
         except Exception as e:
             print(e)
 
@@ -203,20 +206,21 @@ def main(badge_number, refresh_limit, head):
         optionals.add_argument('--headless')
     
 
-    driver = webdriver.Chrome(options=optionals)
-    driver.implicitly_wait(10)
+    DRIVER = webdriver.Chrome(options=optionals)
+    DRIVER.implicitly_wait(10)
 
-    navigate_to_website(driver, ANDON_SITE, refresh_limit)
-    login(driver, badge_number)
+    navigate_to_website(DRIVER, ANDON_SITE, refresh_limit)
+    login(DRIVER, badge_number)
     # Redundant due to first driver navigation kicks out to FCMenu Login
-    navigate_to_website(driver, ANDON_SITE, refresh_limit)
+    navigate_to_website(DRIVER, ANDON_SITE, refresh_limit)
 
-    resolve_andons(driver, refresh_limit)
+    resolve_andons(DRIVER, refresh_limit)
 
     logging.info(f"\n\nAndons in session resolved: {refresh_limit}")
-    driver.quit()
+    DRIVER.quit()
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = AndonResolverApp(root)
-    root.mainloop()
+    # root = tk.Tk()
+    # app = AndonResolverApp(root)
+    # root.mainloop()
+    main('12730876', 1, False)
