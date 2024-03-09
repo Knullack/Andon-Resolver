@@ -3,11 +3,17 @@ import subprocess
 import tkinter as tk
 from tkinter.constants import *
 import sys
-from os.path import join, dirname
-from time import sleep as s
 import logging
-
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By as by
+from selenium.common.exceptions import NoSuchElementException, NoSuchWindowException, ElementClickInterceptedException, WebDriverException, TimeoutException, InvalidSelectorException
 logging.basicConfig(level=logging.INFO)
+
 DRIVER = None
 ANDON_SITE = "http://fc-andons-na.corp.amazon.com/HDC3?category=Pick&type=All+types"
 LOGIN_URL = "https://fcmenu-iad-regionalized.corp.amazon.com/login"
@@ -63,8 +69,6 @@ class AndonResolverApp:
         output.place(x=30, y=170, width=300, height=30)
         
     def resolve(self):
-        from selenium.common.exceptions import NoSuchElementException
-        from selenium.common.exceptions import ElementClickInterceptedException
         try:
             badge_value = str(self.badge.get())
             count_value = self.count.get()
@@ -101,7 +105,6 @@ def install_module(module_name):
             sys.exit(1)
 
 def navigate_to_website(driver, url, max_attempts=5):
-    from selenium.common.exceptions import WebDriverException
     exception_count = 0
     while exception_count < max_attempts:
         try:
@@ -126,7 +129,6 @@ def login(driver, badge):
         HELPER_type_and_click(input_element,loginBadge)
 
 def HELPER_type_and_click(element, text_to_type):
-    from selenium.webdriver.common.keys import Keys
     element.send_keys(text_to_type)
     element.send_keys(Keys.ENTER)
 
@@ -142,10 +144,21 @@ def resolve_andons(driver, refresh_limit):
             x = 0 if failedToUpdate == True else None
     
 def select_andon(driver, x):
-    from selenium.common.exceptions import NoSuchElementException, NoSuchWindowException, ElementClickInterceptedException
-    from selenium.webdriver.common.action_chains import ActionChains
     actions = ActionChains(driver)
-    select_andon = driver.find_element('xpath', f'/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-table/div/div[3]/table/tbody/tr[{x}]/td[1]/awsui-radio-button/div/label/input')
+    selected = False
+    while True:
+        try:
+            # wait for table to show
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((by.XPATH, '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-table/div/div[3]/table/tbody/tr[1]')))
+            select_andon = driver.find_element('xpath', f'/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-table/div/div[3]/table/tbody/tr[{x}]/td[1]/awsui-radio-button/div/label/input')
+            break
+        except NoSuchElementException:
+            driver.execute_script('location.reload();')
+            try:
+                select_andon = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((by.XPATH, '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-table/div/div[3]/table/tbody/tr[{x}]/td[1]/awsui-radio-button/div/label/input')))
+                break
+            except InvalidSelectorException:
+                driver.execute_script('location.reload();')
     view_andon = driver.find_element('xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-table/div/div[2]/div[1]/div[1]/span/div/div[2]/awsui-button[2]/button')
     exceptionState = False
     actions.move_to_element(select_andon).perform()
@@ -164,17 +177,20 @@ def select_andon(driver, x):
         driver.execute_script("location.reload();")
         resolve_andons(driver, 1)
 def resolve_andon(driver, refresh_limit, failBool):
-    from selenium.common.exceptions import NoSuchElementException, NoSuchWindowException, ElementClickInterceptedException
-    driver.implicitly_wait(0.1)
-    failed_warning_msg = driver.find_elements('xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[2]/div/span/span/awsui-flash/div/div[2]/div/div')
-    resolve = driver.find_element('xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[2]/div/span/span/awsui-form/div/div[2]/span/span/awsui-form-section/div/div[2]/span/awsui-column-layout/div/span/div/awsui-form-field[4]/div/div/div/div/span/awsui-checkbox/label/input')
-    save_changes = driver.find_element('xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[3]/span/div/div[2]/awsui-button[2]/button')
-    driver.implicitly_wait(10)
-
-    checkbox_state = driver.find_element('xpath', '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[2]/div/span/span/awsui-form/div/div[2]/span/span/awsui-form-section/div/div[2]/span/awsui-column-layout/div/span/div/awsui-form-field[4]/div/div/div/div/span/awsui-checkbox/label').get_attribute('class')
+    try:
+        driver.implicitly_wait(.5)
+        failed_warning_msg = driver.find_element(by.XPATH, '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[2]/div/span/span/awsui-flash/div/div[2]/div/div')
+        failed_warning_msg = True
+    except (TimeoutException, NoSuchElementException):
+        failed_warning_msg = False
+    checkbox_state = WebDriverWait(driver, 10).until(EC.presence_of_element_located((by.XPATH, '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[2]/div/span/span/awsui-form/div/div[2]/span/span/awsui-form-section/div/div[2]/span/awsui-column-layout/div/span/div/awsui-form-field[4]/div/div/div/div/span/awsui-checkbox/label'))).get_attribute('class')
+    
     if checkbox_state == "awsui-checkbox":
         try:
+            resolve = WebDriverWait(driver, 10).until(EC.presence_of_element_located((by.XPATH, '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[2]/div/span/span/awsui-form/div/div[2]/span/span/awsui-form-section/div/div[2]/span/awsui-column-layout/div/span/div/awsui-form-field[4]/div/div/div/div/span/awsui-checkbox/label/input')))
             resolve.click()
+
+            save_changes = WebDriverWait(driver, 10).until(EC.presence_of_element_located((by.XPATH, '/html/body/div/div/div/awsui-app-layout/div/main/div/div[2]/div/span/div/awsui-modal/div[2]/div/div/div[3]/span/div/div[2]/awsui-button[2]/button')))
             save_changes.click()
         except NoSuchElementException:
             failed_warning_msg = True
@@ -187,15 +203,13 @@ def resolve_andon(driver, refresh_limit, failBool):
             driver.execute_script("location.reload();")
             resolve_andons(driver,refresh_limit)
     elif checkbox_state == "awsui-checkbox awsui-checkbox-checked":
-        logging.info("Failed to update andon error. Refreshing page...")
+        logging.info("Andon already resolved, refreshing page...")
         driver.execute_script("location.reload();")
         failBool = True
     else: None
 
 def main(badge_number, refresh_limit, head):
     install_module('selenium')
-    from selenium import webdriver
-    from selenium.webdriver.chrome.options import Options as ChromeOptions
     optionals = ChromeOptions()
     optionals.add_argument('--log-level=3')
     optionals.add_argument('--force-device-scale-factor=0.7')
