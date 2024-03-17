@@ -1,5 +1,5 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
-################################################################################
-
-/.vs
+.vs/*
+Test/__pycache__/test_andon_resolver.cpython-312.pyc
+Code/__pycache__/__init__.cpython-312.pyc
+Test/__pycache__/__init__.cpython-312.pyc
+.gitignore
